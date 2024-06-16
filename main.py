@@ -21,6 +21,10 @@ EPSG_SAVE_PATH = 'result/'
 GEO_JSON_SAVE_PATH = 'result/'
 DEFECT_PIXELS_SAVE_PATH = 'result/'
 
+os.makedirs(EPSG_SAVE_PATH, exist_ok=True)
+os.makedirs(GEO_JSON_SAVE_PATH, exist_ok=True)
+os.makedirs(DEFECT_PIXELS_SAVE_PATH, exist_ok=True)
+
 SLICE_WIDTH = 2745
 SLICE_HEIGHT = 2745
 OVERLAP = 0
