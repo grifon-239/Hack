@@ -1,7 +1,9 @@
-import geojson
-from geojson import Feature, Point, FeatureCollection
 import os
+
+import geojson
 import rasterio
+from geojson import Feature, Point, FeatureCollection
+
 
 def pixel_2_cord(points, geotransform, save_path):
     pointsCoord = []
@@ -20,7 +22,6 @@ def pixel_2_cord(points, geotransform, save_path):
 
 
 def create_geo_json(pointsCoord: list, path2saveGeoJSON: str) -> None:
-
     upper_left = Feature(geometry=Point((pointsCoord[0][0], pointsCoord[0][1])))
     upper_right = Feature(geometry=Point((pointsCoord[1][0], pointsCoord[1][1])))
     lower_right = Feature(geometry=Point((pointsCoord[2][0], pointsCoord[2][1])))
@@ -32,10 +33,8 @@ def create_geo_json(pointsCoord: list, path2saveGeoJSON: str) -> None:
 
 
 def png2Tif(input_file_path='', output_file_path='', pointsCoord=0):
-
     head_tail = os.path.split(input_file_path)
     name_file = head_tail[1]
-
 
     dataset = rasterio.open(input_file_path, 'r')
     bands = [1, 2, 3, 4]

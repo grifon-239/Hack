@@ -2,6 +2,7 @@ import numpy as np
 
 from image_utils import adjust_gamma
 
+
 def make_4channels_from_tiff(gdal_file):
     final_arr = [[], [], [], []]
 
@@ -28,6 +29,7 @@ def make_4channels_from_tiff(gdal_file):
     # rescaled = adjust_gamma(rescaled, gamma=2.0)
 
     return image_res
+
 
 def make_png_from_tiff(gdal_file):
     final_arr = [[], [], []]

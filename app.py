@@ -1,29 +1,28 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory
-from flask_dropzone import Dropzone
-import os, shutil
+import os
 import os.path
+import shutil
+import shutil
+import time
 import warnings
 
-from osgeo import gdal
-import numpy as np
-import torch
 import cv2
+import numpy as np
 import pandas as pd
-import time
-import shutil
-
-from preprocessing import make_png_from_tiff, make_4channels_from_tiff
-from image_utils import split_image_with_overlap, compare_pics, find_target_slice, find_corners, get_final_coords
-from geo_utils import pixel_2_cord, create_geo_json, png2Tif
+import torch
 from defect_pixels import find_defect_pixels
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory
+from flask_dropzone import Dropzone
+from geo_utils import pixel_2_cord, create_geo_json, png2Tif
 from image_utils import adjust_gamma
+from image_utils import split_image_with_overlap, compare_pics, find_target_slice, find_corners, get_final_coords
+from osgeo import gdal
+from preprocessing import make_png_from_tiff, make_4channels_from_tiff
 
 warnings.filterwarnings('ignore')
 
 EPSG_SAVE_PATH = 'result/'
 GEO_JSON_SAVE_PATH = 'result/'
 DEFECT_PIXELS_SAVE_PATH = 'result/'
-
 
 SLICE_WIDTH = 2745
 SLICE_HEIGHT = 2745
@@ -32,7 +31,6 @@ XFEAT_THRESHOLD = 50
 SLICE_MATH_FLAG = False
 SAVE_IMAGE_CORRECTED_TIF = True
 CREATE_GEO_JSON = True
-
 
 app = Flask(__name__)
 dropzone = Dropzone(app)
@@ -50,7 +48,6 @@ os.makedirs(GEO_JSON_SAVE_PATH, exist_ok=True)
 os.makedirs(DEFECT_PIXELS_SAVE_PATH, exist_ok=True)
 os.makedirs('static', exist_ok=True)
 
-
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
@@ -60,7 +57,6 @@ def index():
     files = os.listdir(app.config['UPLOAD_FOLDER'])
     maps = os.listdir(app.config['MAPS_FOLDER'])
     return render_template('index.html', files=files, maps=maps)
-
 
 
 @app.route('/upload', methods=['POST'])
@@ -162,16 +158,14 @@ def get_file_path():
 
         df.to_csv(os.path.join(path2save_coord, 'coords.csv'), index=False)
 
-
         if CREATE_GEO_JSON:
             create_geo_json(points_EPSG, GEO_JSON_SAVE_PATH)
         else:
             pass
 
-
         crop_image_corrected = find_defect_pixels(crop_image=image_crop_4ch, save_path=DEFECT_PIXELS_SAVE_PATH)
 
-        crop_image_corrected_2 = crop_image_corrected[:,:,:3]
+        crop_image_corrected_2 = crop_image_corrected[:, :, :3]
 
         crop_image_corrected_2 = adjust_gamma(crop_image_corrected_2, gamma=2.0)
 
@@ -180,7 +174,8 @@ def get_file_path():
         cv2.imwrite(DEFECT_PIXELS_SAVE_PATH + 'crop_corrected_tmp.tif', crop_image_corrected)
 
         if SAVE_IMAGE_CORRECTED_TIF:
-            png2Tif(os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected_tmp.tif'), DEFECT_PIXELS_SAVE_PATH, points_EPSG)
+            png2Tif(os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected_tmp.tif'), DEFECT_PIXELS_SAVE_PATH,
+                    points_EPSG)
             os.remove(os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected_tmp.tif'))
         else:
             pass
@@ -189,7 +184,6 @@ def get_file_path():
               f'{points_EPSG[2]}, {points_EPSG[3]}')
 
         resulted_text = f'Расчет завершен, координаты в формате EPSG:32637: {points_EPSG[0]}, {points_EPSG[1]}, {points_EPSG[2]}, {points_EPSG[3]}'
-
 
         resulted_image_path = 'static/slice_res.jpg'
 
@@ -207,10 +201,10 @@ def get_file_path():
         resulted_image_path = ''
         resulted_image_path_2 = os.path.join('static', 'crop_corrected.png')
 
-
     files = os.listdir(app.config['UPLOAD_FOLDER'])
     maps = os.listdir(app.config['MAPS_FOLDER'])
-    return render_template('index.html', resulted_text=resulted_text, files=files, maps=maps, resulted_image_path=resulted_image_path, resulted_image_path_2=resulted_image_path_2)
+    return render_template('index.html', resulted_text=resulted_text, files=files, maps=maps,
+                           resulted_image_path=resulted_image_path, resulted_image_path_2=resulted_image_path_2)
 
 
 if __name__ == '__main__':

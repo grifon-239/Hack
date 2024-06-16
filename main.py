@@ -1,19 +1,18 @@
 import argparse
 import os.path
+import time
 import warnings
 
-from osgeo import gdal
-import numpy as np
-import torch
 import cv2
+import numpy as np
 import pandas as pd
-import time
-
-from preprocessing import make_png_from_tiff, make_4channels_from_tiff
-from image_utils import split_image_with_overlap, compare_pics, find_target_slice, find_corners, get_final_coords
-from geo_utils import pixel_2_cord, create_geo_json, png2Tif
+import torch
 from defect_pixels import find_defect_pixels
+from geo_utils import pixel_2_cord, create_geo_json, png2Tif
 from image_utils import adjust_gamma
+from image_utils import split_image_with_overlap, compare_pics, find_target_slice, find_corners, get_final_coords
+from osgeo import gdal
+from preprocessing import make_png_from_tiff, make_4channels_from_tiff
 
 warnings.filterwarnings('ignore')
 
@@ -32,7 +31,6 @@ XFEAT_THRESHOLD = 50
 SLICE_MATH_FLAG = False
 SAVE_IMAGE_CORRECTED_TIF = True
 CREATE_GEO_JSON = True
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -153,4 +151,3 @@ if __name__ == "__main__":
     else:
 
         print('Кроп не нашелся на подложке')
-

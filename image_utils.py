@@ -82,17 +82,18 @@ def find_corners(ref_points, dst_points):
     h = 915
     w = 915
 
-    corners_img1 = np.array([[0, 0], [w-1, 0], [w-1, h-1], [0, h-1]], dtype=np.float32).reshape(-1, 1, 2)
+    corners_img1 = np.array([[0, 0], [w - 1, 0], [w - 1, h - 1], [0, h - 1]], dtype=np.float32).reshape(-1, 1, 2)
 
     warped_corners = cv2.perspectiveTransform(corners_img1, H)
 
     for i in range(len(warped_corners)):
-        start_point = tuple(warped_corners[i-1][0].astype(int))
+        start_point = tuple(warped_corners[i - 1][0].astype(int))
 
         # bottom left, upper left, upper right, bottom right
         corners.append(start_point)
 
     return corners
+
 
 def get_final_coords(points, target_slice, target_slice_coords):
     point_1 = (points[1][0] * 3, points[1][1] * 3)
