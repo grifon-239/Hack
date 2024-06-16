@@ -26,9 +26,18 @@
 
 {% if resulted_text %}
 <h2>Результат</h2>
-<img src={{ resulted_image_path }}>
+
+<table border="1">
+
+<tr>
+<td><img width="500px" height="auto" src={{ resulted_image_path }}></td>
+    <td><img width="500px" height="auto" src={{ resulted_image_path_2 }}></td>
+</tr>
+</table>
+
 <p id="text">{{ resulted_text }}</p>
 {% endif %}
 
 </body>
+
 </html>

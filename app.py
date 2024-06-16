@@ -10,6 +10,7 @@ import torch
 import cv2
 import pandas as pd
 import time
+import shutil
 
 from preprocessing import make_png_from_tiff, make_4channels_from_tiff
 from image_utils import split_image_with_overlap, compare_pics, find_target_slice, find_corners, get_final_coords
@@ -40,6 +41,14 @@ app.config['MAPS_FOLDER'] = 'layouts'
 app.config['DROPZONE_UPLOAD_MULTIPLE'] = True
 app.config['DROPZONE_MAX_FILES'] = 100
 app.config['DROPZONE_PARALLEL_UPLOADS'] = 100
+
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['MAPS_FOLDER'], exist_ok=True)
+os.makedirs(EPSG_SAVE_PATH, exist_ok=True)
+os.makedirs(GEO_JSON_SAVE_PATH, exist_ok=True)
+os.makedirs(DEFECT_PIXELS_SAVE_PATH, exist_ok=True)
+os.makedirs('static', exist_ok=True)
+
 
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
@@ -176,7 +185,13 @@ def get_file_path():
               f'{points_EPSG[2]}, {points_EPSG[3]}')
 
         resulted_text = f'Processing done: EPSG crop coordinates: {points_EPSG[0]}, {points_EPSG[1]}, {points_EPSG[2]}, {points_EPSG[3]}'
+
+
         resulted_image_path = 'static/slice_res.jpg'
+
+        shutil.copy()
+        resulted_image_path_2 = 'static/slice_res.jpg'
+
 
     else:
 
@@ -187,6 +202,7 @@ def get_file_path():
         print('Given crop not found on a layout!')
         resulted_text = f'HUI'
         resulted_image_path = 'HUI'
+        resulted_image_path_2 = 'HUI2'
 
     # else:
     #     png2Tif(os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected.jpg'), DEFECT_PIXELS_SAVE_PATH)
@@ -194,8 +210,7 @@ def get_file_path():
 
     files = os.listdir(app.config['UPLOAD_FOLDER'])
     maps = os.listdir(app.config['MAPS_FOLDER'])
-    return render_template('index.html', resulted_text=resulted_text, files=files, maps=maps,
-                               resulted_image_path=resulted_image_path)
+    return render_template('index.html', resulted_text=resulted_text, files=files, maps=maps, resulted_image_path=resulted_image_path, resulted_image_path_2=resulted_image_path_2)
 
 
 if __name__ == '__main__':
