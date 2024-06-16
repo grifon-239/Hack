@@ -9,34 +9,35 @@ import cv2
 import pandas as pd
 import time
 
-from preprocessing import make_png_from_tiff
+from preprocessing import make_png_from_tiff, make_4channels_from_tiff
 from image_utils import split_image_with_overlap, compare_pics, find_target_slice, find_corners, get_final_coords
 from geo_utils import pixel_2_cord, create_geo_json, png2Tif
 from defect_pixels import find_defect_pixels
+from image_utils import adjust_gamma
 
 warnings.filterwarnings('ignore')
 
-EPSG_SAVE_PATH = 'dataset/'
-GEO_JSON_SAVE_PATH = 'dataset/'
-DEFECT_PIXELS_SAVE_PATH = 'dataset/'
+EPSG_SAVE_PATH = 'result/'
+GEO_JSON_SAVE_PATH = 'result/'
+DEFECT_PIXELS_SAVE_PATH = 'result/'
 
 SLICE_WIDTH = 2745
 SLICE_HEIGHT = 2745
 OVERLAP = 0
 XFEAT_THRESHOLD = 100
 SLICE_MATH_FLAG = False
-SAVE_IMAGE_CORRECTED_TIF = False
-CREATE_GEO_JSON = False
+SAVE_IMAGE_CORRECTED_TIF = True
+CREATE_GEO_JSON = True
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--crop_name', type=str, default='dataset/crops/crop_0_0_0000.tif',
+    parser.add_argument('--crop_name', type=str, default='uploads/crop_2_1_0000.tif',
                         help='Path to crop file for testing (should be .tif)')
-    parser.add_argument('--layout_name', type=str, default='dataset/layouts/layout_2021-08-16.tif',
+    parser.add_argument('--layout_name', type=str, default='layouts/layout_2021-08-16.tif',
                         help='Path to reference layout file (should be .tif)')
 
-    parser.add_argument('--path2save_coords', type=str, default='dataset',
+    parser.add_argument('--path2save_coords', type=str, default='result',
                         help='Path to save coords.csv')
 
     # parse configs
@@ -50,6 +51,10 @@ if __name__ == "__main__":
     name_layout_tif = os.path.split(layout_path_tif)[1]
     name_crop_tif = os.path.split(crop_path_tif)[1]
 
+    path2save_coord = 'result/'
+    name_layout_tif = os.path.split(layout_path_tif)[1]
+    name_crop_tif = os.path.split(crop_path_tif)[1]
+
     if crop_path_tif.split('.')[-1] != 'tif' or layout_path_tif.split('.')[-1] != 'tif':
         raise FileNotFoundError(f'Incorect file file format: both files should have ".tif" extension!')
 
@@ -58,6 +63,10 @@ if __name__ == "__main__":
     layout_tif = gdal.Open(layout_path_tif, gdal.GA_ReadOnly)
 
     image_crop = make_png_from_tiff(gdal_file=crop_tif)
+    # cv2.imwrite('static/cropRGB.jpg', image_crop)
+
+    image_crop_4ch = make_4channels_from_tiff(gdal_file=crop_tif)
+
     image_layout = make_png_from_tiff(gdal_file=layout_tif)
 
     # load xfeat
@@ -111,26 +120,33 @@ if __name__ == "__main__":
                            'elapsed_time': [end_time - start_time]
                            })
 
-        df.to_csv(path2save_coord, index=False)
-
-        # create geojson coords and write to file
+        df.to_csv(os.path.join(path2save_coord, 'coords.csv'), index=False)
 
         if CREATE_GEO_JSON:
             create_geo_json(points_EPSG, GEO_JSON_SAVE_PATH)
         else:
             pass
 
-        # second task: find defective pixels: return crops with corrected pixels and save a corrections report
-        crop_image_corrected = find_defect_pixels(crop_image=image_crop, save_path=DEFECT_PIXELS_SAVE_PATH)
-        cv2.imwrite(DEFECT_PIXELS_SAVE_PATH + 'crop_corrected.jpg', crop_image_corrected)
+        crop_image_corrected = find_defect_pixels(crop_image=image_crop_4ch, save_path=DEFECT_PIXELS_SAVE_PATH)
+
+        crop_image_corrected_2 = crop_image_corrected[:, :, :3]
+
+        crop_image_corrected_2 = adjust_gamma(crop_image_corrected_2, gamma=2.0)
+
+        cv2.imwrite(DEFECT_PIXELS_SAVE_PATH + 'crop_corrected.png', crop_image_corrected_2)
+        cv2.imwrite(os.path.join('static', 'crop_corrected.png'), crop_image_corrected_2)
+        cv2.imwrite(DEFECT_PIXELS_SAVE_PATH + 'crop_corrected_tmp.tif', crop_image_corrected)
 
         if SAVE_IMAGE_CORRECTED_TIF:
-            png2Tif(os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected.jpg'), DEFECT_PIXELS_SAVE_PATH, points_EPSG)
+            png2Tif(os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected_tmp.tif'), DEFECT_PIXELS_SAVE_PATH,
+                    points_EPSG)
+            os.remove(os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected_tmp.tif'))
         else:
             pass
 
         print(f'Processing done: EPSG crop coordinates: {points_EPSG[0]}, {points_EPSG[1]},'
-              f' {points_EPSG[2]}, {points_EPSG[3]}')
-
+              f'{points_EPSG[2]}, {points_EPSG[3]}')
     else:
-        print('Given crop not found on a layout!')
+
+        print('Кроп не нашелся на подложке')
+

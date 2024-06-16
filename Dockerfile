@@ -1,10 +1,14 @@
-FROM continuumio/miniconda3
+FROM osgeo/gdal:ubuntu-full-3.6.3
 
 WORKDIR /Hack_final
 
 COPY . .
-RUN conda env create -f environment.yml
 
-SHELL ["conda", "run", "-n", "myenv", "/bin/bash", "-c"]
+RUN apt-get update
+RUN apt-get install ffmpeg libsm6 libxext6  -y
+RUN apt-get install python3.9 -y
+RUN apt-get install python3-pip -y
 
-ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "hack_env", "python", "app.py"]
+RUN pip install -r requirements.txt
+
+RUN python app.py
