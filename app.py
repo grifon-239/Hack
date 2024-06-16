@@ -16,6 +16,7 @@ from preprocessing import make_png_from_tiff, make_4channels_from_tiff
 from image_utils import split_image_with_overlap, compare_pics, find_target_slice, find_corners, get_final_coords
 from geo_utils import pixel_2_cord, create_geo_json, png2Tif
 from defect_pixels import find_defect_pixels
+from image_utils import adjust_gamma
 
 warnings.filterwarnings('ignore')
 
@@ -102,6 +103,8 @@ def get_file_path():
     layout_tif = gdal.Open(layout_path_tif, gdal.GA_ReadOnly)
 
     image_crop = make_png_from_tiff(gdal_file=crop_tif)
+    # cv2.imwrite('static/cropRGB.jpg', image_crop)
+
     image_crop_4ch = make_4channels_from_tiff(gdal_file=crop_tif)
 
     image_layout = make_png_from_tiff(gdal_file=layout_tif)
@@ -159,20 +162,21 @@ def get_file_path():
 
         df.to_csv(os.path.join(path2save_coord, 'coords.csv'), index=False)
 
-        # create geojson coords and write to file
 
         if CREATE_GEO_JSON:
             create_geo_json(points_EPSG, GEO_JSON_SAVE_PATH)
         else:
             pass
 
-        # second task: find defective pixels: return crops with corrected pixels and save a corrections report
-        # crop_image_corrected = find_defect_pixels(crop_image=image_crop, save_path=DEFECT_PIXELS_SAVE_PATH)
 
         crop_image_corrected = find_defect_pixels(crop_image=image_crop_4ch, save_path=DEFECT_PIXELS_SAVE_PATH)
 
-        # crop_image_corrected = make_4channels_from_tiff(image_crop_4ch, gdal_file=crop_tif)
+        crop_image_corrected_2 = crop_image_corrected[:,:,:3]
 
+        crop_image_corrected_2 = adjust_gamma(crop_image_corrected_2, gamma=2.0)
+
+        cv2.imwrite(DEFECT_PIXELS_SAVE_PATH + 'crop_corrected.png', crop_image_corrected_2)
+        cv2.imwrite(os.path.join('static', 'crop_corrected.png'), crop_image_corrected_2)
         cv2.imwrite(DEFECT_PIXELS_SAVE_PATH + 'crop_corrected_tmp.tif', crop_image_corrected)
 
         if SAVE_IMAGE_CORRECTED_TIF:
@@ -184,13 +188,12 @@ def get_file_path():
         print(f'Processing done: EPSG crop coordinates: {points_EPSG[0]}, {points_EPSG[1]},'
               f'{points_EPSG[2]}, {points_EPSG[3]}')
 
-        resulted_text = f'Processing done: EPSG crop coordinates: {points_EPSG[0]}, {points_EPSG[1]}, {points_EPSG[2]}, {points_EPSG[3]}'
+        resulted_text = f'Расчет завершен, координаты в формате EPSG:32637: {points_EPSG[0]}, {points_EPSG[1]}, {points_EPSG[2]}, {points_EPSG[3]}'
 
 
         resulted_image_path = 'static/slice_res.jpg'
 
-        shutil.copy()
-        resulted_image_path_2 = 'static/slice_res.jpg'
+        resulted_image_path_2 = os.path.join('static', 'crop_corrected.png')
 
 
     else:
@@ -199,14 +202,11 @@ def get_file_path():
         cv2.imwrite(os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected_tmp.tif'), crop_image_corrected)
         png2Tif(os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected_tmp.tif'), DEFECT_PIXELS_SAVE_PATH)
         os.remove(os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected_tmp.tif'))
-        print('Given crop not found on a layout!')
-        resulted_text = f'HUI'
-        resulted_image_path = 'HUI'
-        resulted_image_path_2 = 'HUI2'
+        print('Кроп не нашелся на подложке')
+        resulted_text = f'Кроп не нашелся на подложке'
+        resulted_image_path = ''
+        resulted_image_path_2 = os.path.join('static', 'crop_corrected.png')
 
-    # else:
-    #     png2Tif(os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected.jpg'), DEFECT_PIXELS_SAVE_PATH)
-    #     print('Given crop not found on a layout!')
 
     files = os.listdir(app.config['UPLOAD_FOLDER'])
     maps = os.listdir(app.config['MAPS_FOLDER'])
