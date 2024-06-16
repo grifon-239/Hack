@@ -5,7 +5,7 @@ import numpy as np
 
 def find_defect_pixels(crop_image, save_path):
     low_border = 0.15
-    high_border = 2
+    high_border = 5
 
     with open(os.path.join(save_path, 'pixels_result.txt'), 'w') as wr:
         # [номер строки]; [номер столбца]; [номер канала]; [«битое» значение]; [исправленное значение]

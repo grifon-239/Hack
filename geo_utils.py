@@ -36,8 +36,9 @@ def png2Tif(input_file_path='', output_file_path='', pointsCoord=0):
     head_tail = os.path.split(input_file_path)
     name_file = head_tail[1]
 
+
     dataset = rasterio.open(input_file_path, 'r')
-    bands = [1, 2, 3]
+    bands = [1, 2, 3, 4]
     data = dataset.read(bands)
 
     if pointsCoord:
@@ -49,9 +50,9 @@ def png2Tif(input_file_path='', output_file_path='', pointsCoord=0):
         *bbox, data.shape[1], data.shape[2])
     crs = {'init': 'epsg:32637'}
 
-    with rasterio.open(os.path.join(output_file_path, name_file.split('.')[0]+'.tif'), 'w', driver='GTiff',
+    with rasterio.open(os.path.join(output_file_path, 'crop_corrected.tif'), 'w', driver='GTiff',
                        width=data.shape[1], height=data.shape[2],
-                       count=3, dtype=data.dtype, nodata=0,
+                       count=4, dtype=data.dtype, nodata=0,
                        transform=transform, crs=crs) as dst:
         dst.write(data, indexes=bands)
 

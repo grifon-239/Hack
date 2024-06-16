@@ -24,8 +24,11 @@
         <button type="submit">Расчитать</button>
     </form>
 
-<script defer>
+{% if resulted_text %}
+<h2>Результат</h2>
+<img src={{ resulted_image_path }}>
+<p id="text">{{ resulted_text }}</p>
+{% endif %}
 
-</script>
 </body>
 </html>
