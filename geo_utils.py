@@ -14,7 +14,7 @@ def pixel_2_cord(points, geotransform, save_path):
 
     with open(os.path.join(save_path, 'EPSG_result.txt'), "w") as f:
         for point in pointsCoord:
-            f.write(f'{str(point[0])}; {str(point[1])}')
+            f.write(f'{str(point[0])}; {str(point[1])}\n')
 
     return pointsCoord[0], pointsCoord[1], pointsCoord[2], pointsCoord[3]
 
@@ -31,7 +31,7 @@ def create_geo_json(pointsCoord: list, path2saveGeoJSON: str) -> None:
         geojson.dump(points_collection, fh)
 
 
-def png2Tif(input_file_path: str, output_file_path: str, pointsCoord: list):
+def png2Tif(input_file_path='', output_file_path='', pointsCoord=0):
 
     head_tail = os.path.split(input_file_path)
     name_file = head_tail[1]
@@ -40,8 +40,10 @@ def png2Tif(input_file_path: str, output_file_path: str, pointsCoord: list):
     bands = [1, 2, 3]
     data = dataset.read(bands)
 
-    bbox = [pointsCoord[3][0], pointsCoord[3][1], pointsCoord[1][0], pointsCoord[1][1]]
-    # bbox = [left, bottom, right, top]
+    if pointsCoord:
+        bbox = [pointsCoord[3][0], pointsCoord[3][1], pointsCoord[1][0], pointsCoord[1][1]]
+    else:
+        bbox = [0, 0, 0, 0]
 
     transform = rasterio.transform.from_bounds(
         *bbox, data.shape[1], data.shape[2])

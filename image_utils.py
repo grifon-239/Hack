@@ -99,7 +99,7 @@ def get_final_coords(points, target_slice, target_slice_coords):
     point_2 = (points[3][0] * 3, points[3][1] * 3)
 
     cv2.rectangle(target_slice, (int(point_1[0]), int(point_1[1])), (int(point_2[0]), int(point_2[1])), (0, 0, 255), 2)
-    cv2.imwrite('dataset/slice_res.jpg', target_slice)
+    # cv2.imwrite('slice_res.jpg', target_slice)
 
     final_point_1_x = int(target_slice_coords[2] + point_1[0])
     final_point_1_y = int(target_slice_coords[0] + point_1[1])

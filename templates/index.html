@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>File Upload</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dropzone@5.7.0/dist/dropzone.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/dropzone@5.7.0/dist/dropzone.min.js">
+    </script>
+</head>
+<body>
+    <h1>Расчёт координат</h1>
+
+    <h2>Загрузите кропы</h2>
+    {{ dropzone.create(action='upload') }}
+    {{ dropzone.config(custom_init='dz = this; let uploadedFiles = []; dz.on("successmultiple", () => { console.log("UPLOADED", uploadedFiles); console.log("DZ FILES", dz.files); dz.files.forEach(file => { if (uploadedFiles.includes(file.upload.uuid)) { dz.removeFile(file); };  } ); uploadedFiles = dz.files.map(file => file.upload.uuid); console.count() } )', default_message='Нажмите, или перенесите файлы для загрузки') }}
+
+ <h2>Выберите подложку</h2>
+    <form method="POST" action="{{ url_for('get_file_path') }}">
+        <select name="selected_file">
+            {% for map in maps %}
+                <option value="{{ map }}">{{ map }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Расчитать</button>
+    </form>
+
+<script defer>
+
+</script>
+</body>
+</html>
