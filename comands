@@ -1,0 +1,4 @@
+conda create -c conda-forge python=3.9 -n hack_env
+conda activate hack_env
+conda install -c conda-forge gdal
+pip install -r reqs.txt
