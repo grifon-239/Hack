@@ -11,4 +11,4 @@ RUN apt-get install python3-pip -y
 
 RUN pip install -r requirements.txt
 
-RUN python app.py
+# RUN python app.py
