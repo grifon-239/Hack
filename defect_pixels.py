@@ -4,11 +4,11 @@ import cv2
 import numpy as np
 
 
-def find_defect_pixels(crop_image, save_path):
+def find_defect_pixels(name_crop_tif, crop_image, save_path):
     low_border = 0.15
     high_border = 5
 
-    with open(os.path.join(save_path, 'pixels_result.txt'), 'w') as wr:
+    with open(os.path.join(save_path, f'pixels_{name_crop_tif.split(".")[0]}.txt'), 'w') as wr:
         # [номер строки]; [номер столбца]; [номер канала]; [«битое» значение]; [исправленное значение]
 
         img_draw = crop_image.copy()
@@ -42,7 +42,7 @@ def find_defect_pixels(crop_image, save_path):
                         img_corrected[y, x, c] = near_mean_px
                         px_val_corrected = near_mean_px
                         dots.append((x, y))
-                        line = f"{x}; {y}; {c}; {px_val}; {px_val_corrected}\n"
+                        line = f"{x}; {y}; {c + 1}; {px_val}; {px_val_corrected}\n"
                         wr.write(line)
 
     return img_corrected
