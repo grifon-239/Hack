@@ -106,7 +106,7 @@ if __name__ == "__main__":
 
         # get geo info from layout tif and make found coords in EPSG and write to file
         geotransform = layout_tif.GetGeoTransform()
-        points_EPSG = pixel_2_cord([fp_1, fp_2, fp_3, fp_4], geotransform, EPSG_SAVE_PATH)
+        points_EPSG = pixel_2_cord([fp_1, fp_2, fp_3, fp_4], geotransform, EPSG_SAVE_PATH, name_crop_tif)
 
         end_time = time.time()
 
@@ -122,25 +122,28 @@ if __name__ == "__main__":
                            'elapsed_time': [end_time - start_time]
                            })
 
-        df.to_csv(os.path.join(path2save_coord, 'coords.csv'), index=False)
+        if os.path.isfile(os.path.join(path2save_coord, 'coords.csv')):
+            df.to_csv(os.path.join(path2save_coord, 'coords.csv'), index=False, mode='a', header=False)
+        else:
+            df.to_csv(os.path.join(path2save_coord, 'coords.csv'), index=False, mode='a')
 
         if CREATE_GEO_JSON:
-            create_geo_json(points_EPSG, GEO_JSON_SAVE_PATH)
+            create_geo_json(points_EPSG, GEO_JSON_SAVE_PATH, name_crop_tif)
         else:
             pass
 
-        crop_image_corrected = find_defect_pixels(crop_image=image_crop_4ch, save_path=DEFECT_PIXELS_SAVE_PATH)
+        crop_image_corrected = find_defect_pixels(name_crop_tif, crop_image=image_crop_4ch, save_path=DEFECT_PIXELS_SAVE_PATH)
 
         crop_image_corrected_2 = crop_image_corrected[:, :, :3]
 
         crop_image_corrected_2 = adjust_gamma(crop_image_corrected_2, gamma=2.0)
 
-        cv2.imwrite(DEFECT_PIXELS_SAVE_PATH + 'crop_corrected.png', crop_image_corrected_2)
+        cv2.imwrite(DEFECT_PIXELS_SAVE_PATH + f'corrected_{name_crop_tif.split(".")[0]}.png', crop_image_corrected_2)
         cv2.imwrite(os.path.join('static', 'crop_corrected.png'), crop_image_corrected_2)
         cv2.imwrite(DEFECT_PIXELS_SAVE_PATH + 'crop_corrected_tmp.tif', crop_image_corrected)
 
         if SAVE_IMAGE_CORRECTED_TIF:
-            png2Tif(os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected_tmp.tif'), DEFECT_PIXELS_SAVE_PATH,
+            png2Tif(name_crop_tif, os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected_tmp.tif'), DEFECT_PIXELS_SAVE_PATH,
                     points_EPSG)
             os.remove(os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected_tmp.tif'))
         else:
