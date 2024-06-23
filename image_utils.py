@@ -31,19 +31,60 @@ def split_image_with_overlap(image, part_width, part_height, overlap):
     return parts, parts_dict
 
 
+def adjust_brightness_contrast(image, brightness=0, contrast=0):
+    if brightness != 0:
+        if brightness > 0:
+            shadow = brightness
+            highlight = 255
+        else:
+            shadow = 0
+            highlight = 255 + brightness
+        alpha_b = (highlight - shadow) / 255
+        gamma_b = shadow
+        image = cv2.addWeighted(image, alpha_b, image, 0, gamma_b)
+
+    if contrast != 0:
+        f = 131 * (contrast + 127) / (127 * (131 - contrast))
+        alpha_c = f
+        gamma_c = 127 * (1 - f)
+        image = cv2.addWeighted(image, alpha_c, image, 0, gamma_c)
+
+    return image
+
+
+def equalize_histogram(image):
+    if len(image.shape) == 2:  # Grayscale image
+        return cv2.equalizeHist(image)
+    elif len(image.shape) == 3:  # Color image
+        ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb)
+        ycrcb[:, :, 0] = cv2.equalizeHist(ycrcb[:, :, 0])
+        return cv2.cvtColor(ycrcb, cv2.COLOR_YCrCb2BGR)
+
+
+def process_images(image1, brightness=0, contrast=0):
+    adjusted_image1 = adjust_brightness_contrast(image1, brightness, contrast)
+    equalized_image1 = equalize_histogram(adjusted_image1)
+
+    return equalized_image1
+
+
 def compare_pics(xfeat, image_crop, image_slice, threshold):
-    img_crop = cv2.resize(image_crop, (915, 915))
-    img_slice = cv2.resize(image_slice, (915, 915))
+    img_crop = cv2.resize(image_crop, (915, 915), interpolation=cv2.INTER_AREA)
+    img_slice = cv2.resize(image_slice, (915, 915), interpolation=cv2.INTER_AREA)
+
+    img_slice = process_images(img_slice, brightness=5, contrast=5)
+    img_crop = process_images(img_crop, brightness=5, contrast=5)
 
     mkpts0, mkpts1 = xfeat.match_xfeat_star(img_crop, img_slice, top_k=8000)
 
-    Fm, inliers = cv2.findFundamentalMat(mkpts0, mkpts1, cv2.USAC_MAGSAC, 0.5, 0.999, 100000)
-    inliers = inliers > 0
+    H, mask = cv2.findHomography(mkpts0, mkpts1, cv2.USAC_MAGSAC, 10, maxIters=37_000, confidence=0.999)
 
-    if inliers.sum() > threshold:
-        mkpts0 = mkpts0[inliers.ravel() == 1]
-        mkpts1 = mkpts1[inliers.ravel() == 1]
+    mm = np.where(mask > 0)
+    mkpts0 = mkpts0[mm[0], :]
+    mkpts1 = mkpts1[mm[0], :]
 
+    print('Points total:', len(mkpts0))
+    if len(mkpts0) > threshold:
         return mkpts0, mkpts1
     else:
         return None, None
