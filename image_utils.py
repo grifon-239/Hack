@@ -10,7 +10,6 @@ def adjust_gamma(image, gamma):
 
 def split_image_with_overlap(image, part_width, part_height, overlap):
     img_width, img_height, _ = image.shape
-
     parts = []
     parts_dict = {}
     ind = 1
@@ -20,14 +19,11 @@ def split_image_with_overlap(image, part_width, part_height, overlap):
         while x < img_width:
             box = (x, y, min(x + part_width, img_width), min(y + part_height, img_height))
             part = image[box[1]:box[3], box[0]:box[2]]
-
             parts.append(part)
             parts_dict[ind] = [box[1], box[3], box[0], box[2]]
-
             ind += 1
             x += part_width - overlap
         y += part_height - overlap
-
     return parts, parts_dict
 
 
@@ -64,7 +60,6 @@ def equalize_histogram(image):
 def process_images(image1, brightness=0, contrast=0):
     adjusted_image1 = adjust_brightness_contrast(image1, brightness, contrast)
     equalized_image1 = equalize_histogram(adjusted_image1)
-
     return equalized_image1
 
 
@@ -123,7 +118,6 @@ def find_target_slice(pts_slice, parts_coords):
     y_2_target = max(int(point_whole_y + 2745 / 2), 2745)
 
     target_slice_coords = [y_1_target, y_2_target, x_1_target, x_2_target]
-
     return target_slice_coords
 
 
@@ -143,7 +137,6 @@ def find_corners(ref_points, dst_points):
 
         # bottom left, upper left, upper right, bottom right
         corners.append(start_point)
-
     return corners
 
 
