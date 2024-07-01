@@ -30,14 +30,14 @@ SLICE_HEIGHT = 2745
 OVERLAP = 0
 XFEAT_THRESHOLD = 50
 SLICE_MATH_FLAG = False
-SAVE_IMAGE_CORRECTED_TIF = True
-CREATE_GEO_JSON = True
+SAVE_IMAGE_CORRECTED_TIF = False
+CREATE_GEO_JSON = False
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--crop_name', type=str, default='dataset/crops/crop_1_3_0000.tif',
+    parser.add_argument('--crop_name', type=str, default='crops/crop_0_0_0000.tif',
                         help='Path to crop file for testing (should be .tif)')
-    parser.add_argument('--layout_name', type=str, default='dataset/layouts/layout_2021-10-10.tif',
+    parser.add_argument('--layout_name', type=str, default='layouts/layout_2021-06-15.tif',
                         help='Path to reference layout file (should be .tif)')
     parser.add_argument('--path2save_coords', type=str, default='result',
                         help='Path to save coords.csv')

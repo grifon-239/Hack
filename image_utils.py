@@ -75,6 +75,17 @@ def compare_pics(xfeat, image_crop, image_slice, threshold):
     img_slice = process_images(img_slice, brightness=5, contrast=5)
     img_crop = process_images(img_crop, brightness=5, contrast=5)
 
+
+
+    #######
+    #######
+
+
+
+
+    #######
+    #######
+
     mkpts0, mkpts1 = xfeat.match_xfeat_star(img_crop, img_slice, top_k=8000)
 
     H, mask = cv2.findHomography(mkpts0, mkpts1, cv2.USAC_MAGSAC, 10, maxIters=37_000, confidence=0.999)

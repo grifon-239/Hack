@@ -1,21 +1,20 @@
-import os
 import os.path
 import shutil
-import shutil
+from flask import Flask, render_template, request
+from flask_dropzone import Dropzone
+import argparse
+import os
 import time
 import warnings
-
 import cv2
 import numpy as np
 import pandas as pd
 import torch
+from osgeo import gdal
 from defect_pixels import find_defect_pixels
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory
-from flask_dropzone import Dropzone
 from geo_utils import pixel_2_cord, create_geo_json, png2Tif
 from image_utils import adjust_gamma
 from image_utils import split_image_with_overlap, compare_pics, find_target_slice, find_corners, get_final_coords
-from osgeo import gdal
 from preprocessing import make_png_from_tiff, make_4channels_from_tiff
 
 warnings.filterwarnings('ignore')
@@ -81,14 +80,14 @@ def upload():
 
 @app.route('/get_file_path', methods=['POST'])
 def get_file_path():
+    global SLICE_MATH_FLAG
+    SLICE_MATH_FLAG = False
     selected_file = request.form.get('selected_file')
     map_path = os.path.join(app.config['MAPS_FOLDER'], selected_file)
 
     crop_path_tif = os.path.join('uploads', os.listdir('uploads')[0])
     layout_path_tif = map_path
 
-    path2save_coord = 'result/'
-    name_layout_tif = os.path.split(layout_path_tif)[1]
     name_crop_tif = os.path.split(crop_path_tif)[1]
 
     if crop_path_tif.split('.')[-1] != 'tif' or layout_path_tif.split('.')[-1] != 'tif':
@@ -98,16 +97,15 @@ def get_file_path():
     crop_tif = gdal.Open(crop_path_tif, gdal.GA_ReadOnly)
     layout_tif = gdal.Open(layout_path_tif, gdal.GA_ReadOnly)
 
-    image_crop = make_png_from_tiff(gdal_file=crop_tif)
-    # cv2.imwrite('static/cropRGB.jpg', image_crop)
-
     image_crop_4ch = make_4channels_from_tiff(gdal_file=crop_tif)
 
+    crop_image_corrected = find_defect_pixels(name_crop_tif, crop_image=image_crop_4ch,
+                                              save_path=DEFECT_PIXELS_SAVE_PATH)
+    crop_image_corrected_2 = crop_image_corrected[:, :, :3]
+
+    image_crop = crop_image_corrected_2.copy()
+
     image_layout = make_png_from_tiff(gdal_file=layout_tif)
-
-    # load xfeat
-
-    start_time = time.time()
 
     xfeat = torch.hub.load('verlab/accelerated_features', 'XFeat', pretrained=True, top_k=4096)
 
@@ -130,7 +128,7 @@ def get_file_path():
         # found target slice coords, take whole image and perform calc on new slice
         target_slice = image_layout[target_slice_coords[0]:target_slice_coords[1],
                        target_slice_coords[2]:target_slice_coords[3]]
-        target_crop_pts, target_slice_pts = compare_pics(xfeat, image_crop, target_slice, threshold=XFEAT_THRESHOLD)
+        target_crop_pts, target_slice_pts = compare_pics(xfeat, image_crop, target_slice, threshold=30)
 
         # get rectangle coords for matches
         points = find_corners(target_crop_pts, target_slice_pts)
@@ -140,45 +138,11 @@ def get_file_path():
 
         # get geo info from layout tif and make found coords in EPSG and write to file
         geotransform = layout_tif.GetGeoTransform()
-        points_EPSG = pixel_2_cord([fp_1, fp_2, fp_3, fp_4], geotransform, EPSG_SAVE_PATH)
-
-        end_time = time.time()
-
-        df = pd.DataFrame({'layout_name': [name_layout_tif],
-                           'crop_name': [name_crop_tif],
-                           'ul': [(points_EPSG[0][0], points_EPSG[0][1])],
-                           'ur': [(points_EPSG[1][0], points_EPSG[1][1])],
-                           'br': [(points_EPSG[2][0], points_EPSG[2][1])],
-                           'bl': [(points_EPSG[3][0], points_EPSG[3][1])],
-                           'crs': ['EPSG:32637'],
-                           'start': [start_time],
-                           'end': [end_time],
-                           'elapsed_time': [end_time - start_time]
-                           })
-
-        df.to_csv(os.path.join(path2save_coord, 'coords.csv'), index=False)
-
-        if CREATE_GEO_JSON:
-            create_geo_json(points_EPSG, GEO_JSON_SAVE_PATH)
-        else:
-            pass
-
-        crop_image_corrected = find_defect_pixels(crop_image=image_crop_4ch, save_path=DEFECT_PIXELS_SAVE_PATH)
-
-        crop_image_corrected_2 = crop_image_corrected[:, :, :3]
+        points_EPSG = pixel_2_cord([fp_1, fp_2, fp_3, fp_4], geotransform, EPSG_SAVE_PATH, name_crop_tif)
 
         crop_image_corrected_2 = adjust_gamma(crop_image_corrected_2, gamma=2.0)
 
-        cv2.imwrite(DEFECT_PIXELS_SAVE_PATH + 'crop_corrected.png', crop_image_corrected_2)
         cv2.imwrite(os.path.join('static', 'crop_corrected.png'), crop_image_corrected_2)
-        cv2.imwrite(DEFECT_PIXELS_SAVE_PATH + 'crop_corrected_tmp.tif', crop_image_corrected)
-
-        if SAVE_IMAGE_CORRECTED_TIF:
-            png2Tif(os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected_tmp.tif'), DEFECT_PIXELS_SAVE_PATH,
-                    points_EPSG)
-            os.remove(os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected_tmp.tif'))
-        else:
-            pass
 
         print(f'Processing done: EPSG crop coordinates: {points_EPSG[0]}, {points_EPSG[1]},'
               f'{points_EPSG[2]}, {points_EPSG[3]}')
@@ -192,10 +156,11 @@ def get_file_path():
 
     else:
 
-        crop_image_corrected = find_defect_pixels(crop_image=image_crop_4ch, save_path=DEFECT_PIXELS_SAVE_PATH)
-        cv2.imwrite(os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected_tmp.tif'), crop_image_corrected)
-        png2Tif(os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected_tmp.tif'), DEFECT_PIXELS_SAVE_PATH)
-        os.remove(os.path.join(DEFECT_PIXELS_SAVE_PATH, 'crop_corrected_tmp.tif'))
+        crop_image_corrected = find_defect_pixels(name_crop_tif, crop_image=image_crop_4ch,
+                                                  save_path=DEFECT_PIXELS_SAVE_PATH)
+        crop_image_corrected_2 = crop_image_corrected[:, :, :3]
+        crop_image_corrected_2 = adjust_gamma(crop_image_corrected_2, gamma=2.0)
+        cv2.imwrite(os.path.join('static', 'crop_corrected.png'), crop_image_corrected_2)
         print('Кроп не нашелся на подложке')
         resulted_text = f'Кроп не нашелся на подложке'
         resulted_image_path = ''
